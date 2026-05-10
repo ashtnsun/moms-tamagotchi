@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\ashsu\\\\OneDrive\\\\Desktop\\\\CC\\\\moms-tamagotchi\" -Recurse -Exclude \"node_modules\" | ForEach-Object { $_.FullName -replace [regex]::Escape\\(\"C:\\\\Users\\\\ashsu\\\\OneDrive\\\\Desktop\\\\CC\\\\moms-tamagotchi\"\\), \".\" } | Sort-Object)",
+      "PowerShell(Get-ChildItem *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(Start-Process -FilePath \"cmd\" -ArgumentList \"/c npm run dev\" -WindowStyle Normal)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\ashsu\\\\OneDrive\\\\Desktop\\\\CC\\\\moms-tamagotchi\\\\src\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)"
+    ]
+  }
+}

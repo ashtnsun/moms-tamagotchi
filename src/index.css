@@ -1,111 +1,918 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  background: #87ceeb;
+  height: 100vh;
+  overflow: hidden;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
+#root {
+  width: 100%;
+  max-width: 100%;
   margin: 0;
+  text-align: left;
+  border-inline: none;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #87ceeb;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
+/* ===================== GAME LAYOUT ===================== */
+
+.game-wrapper {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #87ceeb;
+}
+
+/*
+  Three-layer cartridge frame — no borders, no outlines, no box-shadow borders.
+  Each layer is simply a div with background color and padding acting as the ring.
+  Outer → mid → inner, with decreasing border-radius.
+*/
+
+/*
+  Height chain: game-wrapper (100vh) → game-outer (max-height 95vh, flex col) →
+  game-mid (flex: 1) → game-container (flex: 1, flex col) → scene (flex: 1).
+  Using flex instead of height:100% because max-height doesn't resolve % on children.
+  NO overflow:hidden here — popups are position:absolute children that extend
+  beyond the frame bounds. The flex chain enforces height; overflow clipping lives
+  on .game-container and .scene which handle actual content.
+*/
+.game-outer {
+  width: 100%;
+  max-width: 680px;
+  max-height: 95vh;
+  position: relative;        /* anchor for popup positioning */
+  background: #3D2B1F;       /* dark brown ring */
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+}
+
+.game-mid {
+  background: #C4A882;       /* warm tan ring */
+  border-radius: 8px;
+  padding: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-container {
+  background: #FFF8E7;       /* cream — visible behind UI panel sections */
+  border-radius: 6px;
+  overflow: hidden;          /* clips child backgrounds to rounded corners */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===================== TOP BAR ===================== */
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #FFF8E7;
+  border-bottom: 3px solid #3D2B1F;
+}
+
+.top-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.hearts-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.hearts-count {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 20px;
+  color: #E8394A;
+  line-height: 1;
+}
+
+/* ===================== PIXEL BUTTONS ===================== */
+
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  padding: 10px 16px;
+  border: 3px solid #3D2B1F;
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: none;
+  color: #FFF8E7;
+}
+
+.pixel-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: none !important;
+}
+
+.btn-calories {
+  background: #E8833A;
+  box-shadow: 3px 3px 0 #3D2B1F;
+}
+
+.btn-activity {
+  background: #5BAD8F;
+  box-shadow: 3px 3px 0 #3D2B1F;
+}
+
+.btn-shop {
+  background: #E8607A;
+  box-shadow: 3px 3px 0 #3D2B1F;
+}
+
+.btn-settings {
+  background: #C4A882;
+  box-shadow: 3px 3px 0 #3D2B1F;
+}
+
+.btn-settings.active {
+  background: #A0845E;
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+/* ===================== PROGRESS SECTION ===================== */
+
+.progress-section {
+  padding: 22px 24px 24px;
+  background: #FFF1D6;
+  border-bottom: 3px solid #3D2B1F;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-label {
+  font-size: 10px;
+  color: #3D2B1F;
+  width: 100px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.progress-track {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+
+.progress-seg {
+  height: 26px;
+  flex: 1;
+  border: 2px solid #3D2B1F;
+}
+
+/* seg-filled is a marker only — background comes from variant class */
+.seg-filled {}
+
+.seg-filled-calories {
+  background: linear-gradient(
+    to bottom,
+    #F9E070 0px,
+    #F9E070 3px,
+    #E8833A 3px,
+    #E8833A 100%
+  );
+}
+
+.seg-filled-activity {
+  background: linear-gradient(
+    to bottom,
+    #7DCFB4 0px,
+    #7DCFB4 3px,
+    #5BAD8F 3px,
+    #5BAD8F 100%
+  );
+}
+
+.seg-empty {
+  background: #D4CFC7;
+}
+
+.progress-text {
+  font-size: 11px;
+  white-space: nowrap;
+  width: 114px;
+  text-align: right;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.progress-text-calories {
+  color: #E8833A;
+}
+
+.progress-text-activity {
+  color: #5BAD8F;
+}
+
+/* ===================== SCENE ===================== */
+
+.scene {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.scene-sky {
+  background: linear-gradient(to bottom, #B8E4F9 0%, #C8EDD6 100%);
+  height: 120px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Chunky pixel clouds — base = bottom rectangle, ::before = top bump */
+.cloud {
+  position: absolute;
+  background: #FFFFFF;
+}
+
+.cloud::before {
+  content: '';
+  position: absolute;
+  background: #FFFFFF;
+}
+
+.cloud-1 {
+  width: 96px;
+  height: 28px;
+  top: 42px;
+  left: 56px;
+}
+.cloud-1::before {
+  width: 52px;
+  height: 28px;
+  top: -26px;
+  left: 20px;
+}
+
+.cloud-2 {
+  width: 116px;
+  height: 28px;
+  top: 56px;
+  right: 80px;
+}
+.cloud-2::before {
+  width: 64px;
+  height: 28px;
+  top: -26px;
+  left: 24px;
+}
+
+.characters-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding: 12px 24px 24px;
+  background: linear-gradient(to bottom, #C8EDD6 0%, #d4edc0 100%);
+  flex: 1;
+  overflow: hidden;
+}
+
+.character-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.sprite-box {
+  width: 130px;
+  height: 160px;
+  border: 3px solid #3D2B1F;
   border-radius: 4px;
-  color: var(--text-h);
+  box-shadow: 5px 5px 0 rgba(61, 43, 31, 0.22);
+  image-rendering: pixelated;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.ashton-box {
+  background: linear-gradient(160deg, #89c4f4 0%, #3b89cc 100%);
+}
+
+.sharon-box {
+  background: linear-gradient(160deg, #f7a8c4 0%, #d94f8a 100%);
+}
+
+.char-name {
+  font-size: 11px;
+  color: #3D2B1F;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.char-info {
+  font-size: 9px;
+  color: #5a3e2b;
+}
+
+.scene-ground {
+  height: 44px;
+  background: #7BC67E;
+  border-top: 4px solid #4E9452;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Pixel grass tufts along the top edge */
+.scene-ground::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 16px,
+    #7BC67E 16px,
+    #7BC67E 22px,
+    transparent 22px,
+    transparent 38px
+  );
+}
+
+/* ===================== BOTTOM BAR ===================== */
+
+.bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #FFF8E7;
+  border-top: 3px solid #3D2B1F;
+  flex-shrink: 0;
+}
+
+/* ===================== POPUP PANELS =====================
+   Popups anchor to .game-outer (position: relative).
+   Same three-layer frame as the main game:
+     .popup-outer  — dark brown  (#3D2B1F), border-radius 12px, padding 6px
+     .popup-mid    — tan         (#C4A882), border-radius 8px,  padding 4px
+     .popup-inner  — cream       (#FFF8E7), border-radius 6px,  padding 20px
+
+   Right side: left: calc(100% + 24px), top: 0
+   Left side:  right: calc(100% + 24px), top: 0
+   See "UI CONVENTIONS" in CLAUDE.md.
+   ========================================================= */
+
+.popup-outer {
+  position: absolute;
+  top: 0;
+  width: 260px;
+  max-height: 90vh;
+  overflow: hidden;
+  background: #3D2B1F;
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.28);
+  z-index: 100;
+}
+
+.popup-mid {
+  background: #C4A882;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.popup-inner {
+  background: #FFF8E7;
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.settings-popup {
+  left: calc(100% + 24px);
+}
+
+/* ===================== XP BAR ===================== */
+
+/*
+  .char-label-group is inline-flex so its cross-axis width is determined by the
+  widest non-percentage child (char-name / char-info text). xp-bar-wrap at
+  width:100% then fills exactly that same width. max-width caps it at 120px.
+*/
+.char-label-group {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 140px;
+}
+
+.xp-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.xp-bar-track {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+}
+
+.xp-seg {
+  flex: 1;
+  height: 10px;
+  border: 2px solid #9B8E82;
+}
+
+.xp-seg-filled {
+  background: #F5C842;
+}
+
+.xp-seg-empty {
+  background: #D4CFC7;
+}
+
+.xp-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #5a3e2b;
+}
+
+.popup-title {
+  font-size: 13px;
+  color: #3D2B1F;
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+
+.popup-body {
+  font-size: 8px;
+  color: #5a3e2b;
+  margin: 0;
+  line-height: 1.8;
+}
+
+/* ===================== PHASE 3 — TRACKER POPUPS ===================== */
+
+/* Calorie popup width — position is handled by .popup-col-left */
+.popup-calories {
+  width: 280px;
+}
+
+/* Activity popup width — position is handled by .popup-col-right */
+.popup-activity {
+  width: 280px;
+}
+
+/* Left-side column: Calories on top, Shop below, 12px gap */
+.popup-col-left {
+  position: absolute;
+  right: calc(100% + 24px);
+  top: 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-col-left .popup-outer {
+  position: static;
+}
+
+/* Right-side column: stacks Activity on top, Settings below, 12px gap */
+.popup-col-right {
+  position: absolute;
+  left: calc(100% + 24px);
+  top: 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-col-right .popup-outer {
+  position: static;
+}
+
+.popup-tracker {
+  padding: 16px;
+}
+
+.popup-log-list {
+  max-height: 130px;
+  overflow-y: auto;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popup-log-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.popup-log-list::-webkit-scrollbar-track {
+  background: #D4CFC7;
+  border-radius: 3px;
+}
+
+.popup-log-list::-webkit-scrollbar-thumb {
+  background: #9B8E82;
+  border-radius: 3px;
+  border: 1px solid #3D2B1F;
+}
+
+.popup-log-list::-webkit-scrollbar-thumb:hover {
+  background: #7A6E65;
+}
+
+.popup-log-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #D4CFC7;
+}
+
+.popup-log-entry:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.popup-log-name {
+  font-size: 9px;
+  color: #3D2B1F;
+  line-height: 1.4;
+}
+
+.popup-log-meta {
+  font-size: 9px;
+  color: #9B8E82;
+  line-height: 1.4;
+}
+
+.popup-log-empty {
+  font-size: 9px;
+  color: #9B8E82;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.popup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popup-input {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 8px 10px;
+  border: 2px solid #3D2B1F;
+  border-radius: 2px;
+  background: #FFF8E7;
+  color: #3D2B1F;
+  width: 100%;
+  outline: none;
+}
+
+.popup-input-wrap {
+  position: relative;
+}
+
+.popup-input-wrap .popup-input {
+  padding-right: 44px;
+}
+
+.popup-input-unit {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #9B8E82;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.popup-input::placeholder {
+  color: #C4A882;
+}
+
+.popup-error {
+  font-size: 7px;
+  color: #E8394A;
+  line-height: 1.4;
+}
+
+.popup-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.popup-form-actions .pixel-btn {
+  flex: 1;
+  font-size: 11px;
+  padding: 8px 6px;
+}
+
+/* Active states for tracker toggle buttons */
+.btn-calories.active {
+  background: #C4691F;
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+.btn-activity.active {
+  background: #3D8A6A;
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+/* character-slot keeps position:relative for any future absolutely-positioned children */
+.character-slot {
+  position: relative;
+}
+
+/* ===================== PHASE 4 — CHARACTER COMPONENT ===================== */
+
+.char-sprite-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.char-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.char-clothing-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.char-dead-label {
+  font-size: 9px;
+  color: #E8394A;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/*
+  Bounce animation uses scaleY + translateY only.
+  The weight scaleX lives on the parent element so the two
+  transforms compose without interfering with each other.
+*/
+@keyframes charBounce {
+  0%   { transform: scaleY(1)    translateY(0); }
+  25%  { transform: scaleY(1.12) translateY(-6px); }
+  60%  { transform: scaleY(0.94) translateY(3px); }
+  100% { transform: scaleY(1)    translateY(0); }
+}
+
+.char-bounce {
+  animation: charBounce 400ms ease-out;
+}
+
+/* ── Notification area above each character sprite ── */
+
+/*
+  Fixed 80px height so notifications never shift the sprite down.
+  Flex column with justify-content:flex-end → newest notif at the bottom
+  (closest to sprite), older ones stack above it.
+  overflow:visible lets notifications float outside the 80px zone upward.
+*/
+.char-sprite-outer {
+  width: 140px;
+  height: 172px;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  /* No border, no background, no shadow — sprite floats on the scene */
+}
+
+/*
+  Fixed-size zone above the sprite. position:relative anchors absolutely-
+  positioned notification divs. overflow:visible lets them float above the
+  80px container. Fixed width = sprite width → never shifts the layout.
+*/
+.char-notif-area {
+  position: relative;
+  width: 140px;
+  height: 80px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.char-notif {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: notifFloat 6s ease-out forwards;
+}
+
+.char-notif-xp      { color: #F5C842; }
+.char-notif-heart   { color: #E8607A; }
+.char-notif-levelup { color: #6DBF67; }
+.char-notif-cooldown{ color: #9B8E82; font-size: 11px; }
+
+@keyframes notifFloat {
+  0%   { opacity: 1; transform: translateY(0); }
+  40%  { opacity: 1; transform: translateY(-18px); }
+  100% { opacity: 0; transform: translateY(-36px); }
+}
+
+/* ===================== PHASE 5 — SHOP ===================== */
+
+.popup-shop {
+  right: calc(100% + 24px);
+  width: 320px;
+}
+
+.btn-shop.active {
+  background: #C4501A;
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+.shop-grid::-webkit-scrollbar        { width: 6px; }
+.shop-grid::-webkit-scrollbar-track  { background: #D4CFC7; border-radius: 3px; }
+.shop-grid::-webkit-scrollbar-thumb  { background: #9B8E82; border-radius: 3px; border: 1px solid #3D2B1F; }
+.shop-grid::-webkit-scrollbar-thumb:hover { background: #7A6E65; }
+
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px;
+  background: #FFF1D6;
+  border: 2px solid #C4A882;
+  border-radius: 4px;
+}
+
+.shop-emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.shop-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  color: #3D2B1F;
+  text-align: center;
+  line-height: 1.5;
+  word-break: break-word;
+  width: 100%;
+}
+
+.shop-cost {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.shop-cost-num {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #E8394A;
+}
+
+.shop-buy-btn {
+  background: #E8833A !important;
+  box-shadow: 2px 2px 0 #3D2B1F !important;
+  font-size: 7px !important;
+  padding: 4px 6px !important;
+  line-height: 1 !important;
+}
+
+.shop-buy-disabled {
+  background: #C4A882 !important;
+  box-shadow: 2px 2px 0 #9B8E82 !important;
+  color: #9B8E82 !important;
+  cursor: not-allowed !important;
+}
+
+/* ── Draggable food item in scene ── */
+
+.scene-food {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  z-index: 200;
+  user-select: none;
+  touch-action: none;
+  /* Always horizontally centered at the 'left' coordinate */
+  transform: translateX(-50%);
+}
+
+.scene-food-emoji {
+  font-size: 40px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
+}
+
+.scene-food-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #5a3e2b;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  margin-top: 12px;
+}
+
+.scene-food-falling {
+  animation: foodFall 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  pointer-events: none;
+  cursor: default;
+}
+
+.scene-food-idle {
+  cursor: grab;
+}
+
+.scene-food-idle:active {
+  cursor: grabbing;
+}
+
+.scene-food-dragging {
+  cursor: grabbing;
+}
+
+.scene-food-snapping {
+  transition: left 220ms ease-out, top 220ms ease-out;
+  cursor: grab;
+}
+
+@keyframes foodFall {
+  0%   { transform: translateX(-50%) translateY(-180px); opacity: 0; }
+  60%  { opacity: 1; }
+  75%  { transform: translateX(-50%) translateY(0); }
+  88%  { transform: translateX(-50%) translateY(-14px); }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
