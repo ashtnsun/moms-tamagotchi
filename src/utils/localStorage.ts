@@ -52,3 +52,11 @@ export function saveState(state: GameState): void {
     // storage quota exceeded — silently ignore
   }
 }
+
+export function clearState(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}

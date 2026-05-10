@@ -7,6 +7,8 @@ import { ActivityTracker } from './components/ActivityTracker'
 import { Character } from './components/Character'
 import { PixelHeart } from './components/PixelHeart'
 import { Shop } from './components/Shop'
+import { Settings } from './components/Settings'
+import { clearState } from './utils/localStorage'
 import type { FoodItem } from './data/foodItems'
 
 const TOTAL_SEGMENTS = 10
@@ -76,6 +78,7 @@ export default function App() {
     petCharacter,
     feedCharacter,
     buyFood,
+    updateSettings,
     applyDayReset,
   } = useGameState()
   useDayCycle(applyDayReset)
@@ -260,14 +263,13 @@ export default function App() {
               />
             )}
             {showSettings && (
-              <div className="popup-outer">
-                <div className="popup-mid">
-                  <div className="popup-inner">
-                    <div className="popup-title">⚙ Settings</div>
-                    <p className="popup-body">Settings will be built in Phase 6.</p>
-                  </div>
-                </div>
-              </div>
+              <Settings
+                calorieGoal={state.calorieGoal}
+                activityGoal={state.activityGoal}
+                onSave={updateSettings}
+                onReset={() => { clearState(); window.location.reload() }}
+                onClose={() => setShowSettings(false)}
+              />
             )}
           </div>
         )}

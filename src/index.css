@@ -300,10 +300,11 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
-  padding: 12px 24px 24px;
+  padding: 12px 24px 64px;
   background: linear-gradient(to bottom, #C8EDD6 0%, #d4edc0 100%);
   flex: 1;
-  overflow: hidden;
+  /* No overflow:hidden — larger sprites overflow upward into the sky area,
+     which is intentional. The .scene boundary is the final clip. */
 }
 
 .character-slot {
@@ -434,7 +435,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-width: 140px;
+  max-width: 245px;
 }
 
 .xp-bar-wrap {
@@ -502,8 +503,6 @@ body {
   position: absolute;
   right: calc(100% + 24px);
   top: 0;
-  max-height: 90vh;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -728,8 +727,8 @@ body {
   overflow:visible lets notifications float outside the 80px zone upward.
 */
 .char-sprite-outer {
-  width: 140px;
-  height: 172px;
+  width: 245px;
+  height: 301px;
   position: relative;
   cursor: pointer;
   user-select: none;
@@ -743,7 +742,7 @@ body {
 */
 .char-notif-area {
   position: relative;
-  width: 140px;
+  width: 245px;
   height: 80px;
   overflow: visible;
   pointer-events: none;
@@ -807,7 +806,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  padding: 8px 4px;
+  padding: 10px 6px;
   background: #FFF1D6;
   border: 2px solid #C4A882;
   border-radius: 4px;
@@ -816,11 +815,12 @@ body {
 .shop-emoji {
   font-size: 32px;
   line-height: 1;
+  margin-bottom: 10px;
 }
 
 .shop-name {
   font-family: 'Press Start 2P', monospace;
-  font-size: 6px;
+  font-size: 8px;
   color: #3D2B1F;
   text-align: center;
   line-height: 1.5;
@@ -915,4 +915,76 @@ body {
   75%  { transform: translateX(-50%) translateY(0); }
   88%  { transform: translateX(-50%) translateY(-14px); }
   100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+/* ===================== PHASE 6 — SETTINGS ===================== */
+
+.popup-settings {
+  width: 280px;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #3D2B1F;
+  line-height: 1.5;
+}
+
+.settings-saved {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #6DBF67;
+  text-align: center;
+  animation: settingsFadeOut 2s ease-out forwards;
+}
+
+@keyframes settingsFadeOut {
+  0%, 60% { opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+.settings-separator {
+  height: 1px;
+  background: #C4A882;
+  margin: 16px 0 12px;
+}
+
+.settings-danger-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #9B8E82;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.btn-danger {
+  background: #E8607A;
+  box-shadow: 3px 3px 0 #7A1E30;
+  color: #FFF8E7;
+}
+
+.settings-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-confirm-msg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #E8607A;
+  line-height: 1.6;
 }
