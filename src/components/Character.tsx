@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ReactNode } from 'react'
-import type { CharacterState, AgeStage } from '../types'
+import type { CharacterState } from '../types'
 import { PixelHeart } from './PixelHeart'
 
 const SPRITES = import.meta.glob<{ default: string }>(
@@ -19,19 +19,16 @@ function getClothingUrl(itemId: string): string | null {
   return CLOTHING_IMGS[`/src/assets/clothing/${itemId}.png`]?.default ?? null
 }
 
-function xpNeeded(age: AgeStage): number {
-  return age === 'baby' || age === 'adolescent' ? 5 : 10
+function xpNeeded(level: number): number {
+  if (level <= 9)  return 5
+  if (level <= 14) return 6
+  if (level <= 19) return 7
+  return 8  // levels 20–24
 }
 
 const WEIGHT_SCALE: Record<string, number> = {
   skinny: 0.82, normal: 1, bigger: 1.18, obese: 1.35,
 }
-
-const HEART_NOTIF: ReactNode = (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-    +1 <PixelHeart size={3} color="#E8607A" />
-  </span>
-)
 
 // 8 directions for level-up burst
 const DIRS_8: [number, number][] = [
@@ -102,7 +99,6 @@ export function Character({ char, onPet, petXPAwarded, dayResetTs, dayResetHeart
         setCelebMode('levelup')
       }
       addNotif('Level up!', 'levelup')
-      addNotif(HEART_NOTIF, 'heart')
       setIsCelebBounce(true)
       setTimeout(() => setIsCelebBounce(false), 500)
       setTimeout(() => setCelebMode(null), 2000)
@@ -246,7 +242,11 @@ export function Character({ char, onPet, petXPAwarded, dayResetTs, dayResetHeart
         ) : (
           <>
             <div className="char-info">Lv.{char.level} {char.age}</div>
-            <div className="xp-label">{char.xp} / {xpNeeded(char.age)} xp</div>
+            {char.level >= 25 ? (
+              <div className="xp-label">MAX</div>
+            ) : (
+              <div className="xp-label">{char.xp} / {xpNeeded(char.level)} xp</div>
+            )}
           </>
         )}
       </div>

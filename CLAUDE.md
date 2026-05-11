@@ -137,20 +137,22 @@ A "day" resets at 4:00 AM local time.
 
 ### Age stages and leveling
 
-| Stage | XP to level up | Level range |
-|-------|---------------|-------------|
-| baby | 5 xp/level | levels 1–4 |
-| adolescent | 5 xp/level | levels 5–9 |
-| teen | 10 xp/level | levels 10–19 |
-| adult | 10 xp/level | levels 20+ |
+| Level range | Age stage  | XP to level up |
+|-------------|------------|----------------|
+| 1 – 9       | baby       | 5 XP per level |
+| 10 – 14     | adolescent | 6 XP per level |
+| 15 – 19     | teen       | 7 XP per level |
+| 20 – 24     | adult      | 8 XP per level |
+| 25          | adult      | prestige eligible (XP capped at 0) |
 
 Age transitions:
-- Level 5 → adolescent
-- Level 10 → teen
-- Level 20 → adult
+- Reaching level 10 → adolescent
+- Reaching level 15 → teen
+- Reaching level 20 → adult
+- Reaching level 25 → prestige eligible (no further age change)
 
-On age transition: +5 hearts, set mood to happy.
-On any level up: +1 heart, set mood to happy.
+On level up: set mood to happy. No hearts awarded.
+On age transition: set mood to happy. No hearts awarded.
 
 ### Weight
 
@@ -201,9 +203,9 @@ If `alive === false`, render `gravestone.png` instead of the character sprite. N
 ## Hearts (currency)
 
 Gains:
-- +1 per character level up
-- +5 per age stage transition (per character)
 - Day reset rewards (at 4am): calories logged in [1000, calorieGoal] → +prestigeRewardMultiplier hearts; activity ≥ activityGoal → +prestigeRewardMultiplier hearts (both earnable same day)
+
+Level ups and age transitions do NOT award hearts.
 
 Spending: clothing items and food cost 1–3 hearts. Deduct on purchase. If hearts < cost, block purchase and show "not enough hearts."
 

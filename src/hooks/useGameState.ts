@@ -2,13 +2,16 @@ import { useState, useCallback, useRef } from 'react'
 import type { GameState, CharacterState, AgeStage } from '../types'
 import { loadState, saveState, getInitialState } from '../utils/localStorage'
 
-function xpPerLevel(age: AgeStage): number {
-  return age === 'baby' || age === 'adolescent' ? 5 : 10
+function xpPerLevel(level: number): number {
+  if (level <= 9)  return 5
+  if (level <= 14) return 6
+  if (level <= 19) return 7
+  return 8  // levels 20–24
 }
 
 function ageForLevel(level: number): AgeStage {
-  if (level < 5) return 'baby'
-  if (level < 10) return 'adolescent'
+  if (level < 10) return 'baby'
+  if (level < 15) return 'adolescent'
   if (level < 20) return 'teen'
   return 'adult'
 }
@@ -16,25 +19,23 @@ function ageForLevel(level: number): AgeStage {
 function applyXP(
   char: CharacterState,
   amount: number
-): { char: CharacterState; heartsGained: number } {
+): { char: CharacterState } {
+  if (char.level >= 25) return { char }
+
   let { xp, level, age, mood } = char
-  let heartsGained = 0
   xp += amount
 
-  while (xp >= xpPerLevel(age)) {
-    xp -= xpPerLevel(age)
+  while (level < 25 && xp >= xpPerLevel(level)) {
+    xp -= xpPerLevel(level)
     level += 1
     const newAge = ageForLevel(level)
-    if (newAge !== age) {
-      age = newAge
-      heartsGained += 5
-    } else {
-      heartsGained += 1
-    }
+    if (newAge !== age) age = newAge
     mood = 'happy'
   }
 
-  return { char: { ...char, xp, level, age, mood }, heartsGained }
+  if (level >= 25) xp = 0
+
+  return { char: { ...char, xp, level, age, mood } }
 }
 
 function awardXPBoth(state: GameState, amount: number): GameState {
@@ -42,7 +43,6 @@ function awardXPBoth(state: GameState, amount: number): GameState {
   const sRes = applyXP(state.characters.sharon, amount)
   return {
     ...state,
-    hearts: state.hearts + aRes.heartsGained + sRes.heartsGained,
     characters: { ashton: aRes.char, sharon: sRes.char },
   }
 }
@@ -114,7 +114,7 @@ export function useGameState() {
     setState(prev => {
       const char = prev.characters[id]
       if (!char.alive) return prev
-      const { char: updated, heartsGained } = applyXP(char, xpGain)
+      const { char: updated } = applyXP(char, xpGain)
       scheduleRevertFor(id)
       const fed: CharacterState = {
         ...updated,
@@ -125,7 +125,6 @@ export function useGameState() {
       }
       return {
         ...prev,
-        hearts: prev.hearts + heartsGained,
         characters: { ...prev.characters, [id]: fed },
       }
     })
@@ -139,12 +138,9 @@ export function useGameState() {
       scheduleRevertFor(id)
 
       if (!prev.petXPAwardedToday[id]) {
-        const levelBefore = char.level
-        const { char: updated, heartsGained } = applyXP(char, 1)
-        if (updated.level > levelBefore) scheduleRevertFor(id)
+        const { char: updated } = applyXP(char, 1)
         return {
           ...prev,
-          hearts: prev.hearts + heartsGained,
           petXPAwardedToday: { ...prev.petXPAwardedToday, [id]: true },
           characters: { ...prev.characters, [id]: { ...updated, mood: 'happy' } },
         }
@@ -175,12 +171,12 @@ export function useGameState() {
       if (prev.hearts < cost) return prev
       if (prev.purchasedClothing.includes(itemId)) return prev
       const char = prev.characters[forCharacter]
-      const { char: updated, heartsGained } = applyXP(char, xpGain)
+      const { char: updated } = applyXP(char, xpGain)
       const withMood: CharacterState = { ...updated, mood: 'happy' }
       scheduleRevertFor(forCharacter)
       return {
         ...prev,
-        hearts: prev.hearts - cost + heartsGained,
+        hearts: prev.hearts - cost,
         purchasedClothing: [...prev.purchasedClothing, itemId],
         characters: { ...prev.characters, [forCharacter]: withMood },
       }
