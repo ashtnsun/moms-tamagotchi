@@ -1,4 +1,4 @@
-import type { CharacterState, GameState } from '../types'
+import type { AgeStage, CharacterState, GameState } from '../types'
 
 const STORAGE_KEY = 'moms-tamagotchi-state'
 
@@ -41,13 +41,27 @@ export function getInitialState(): GameState {
   }
 }
 
+function ageForLevel(level: number): AgeStage {
+  if (level < 10) return 'baby'
+  if (level < 15) return 'adolescent'
+  if (level < 20) return 'teen'
+  return 'adult'
+}
+
+function xpCapForLevel(level: number): number {
+  if (level <= 9)  return 5
+  if (level <= 14) return 6
+  if (level <= 19) return 7
+  return 8
+}
+
 function migrateCharacter(
   saved: Partial<CharacterState> | undefined,
   id: 'ashton' | 'sharon'
 ): CharacterState {
   const initial = makeCharacter(id)
   if (!saved) return initial
-  return {
+  const merged: CharacterState = {
     ...initial,
     ...saved,
     equippedClothing: {
@@ -55,6 +69,16 @@ function migrateCharacter(
       ...(saved.equippedClothing ?? {}),
     },
   }
+
+  // Correct age to match the new level thresholds
+  const correctedAge = ageForLevel(merged.level)
+
+  // Clamp XP: non-negative, and below the level-up threshold
+  const correctedXp = merged.level >= 25
+    ? 0
+    : Math.max(0, Math.min(merged.xp, xpCapForLevel(merged.level) - 1))
+
+  return { ...merged, age: correctedAge, xp: correctedXp }
 }
 
 function migrateState(saved: Partial<GameState>): GameState {
