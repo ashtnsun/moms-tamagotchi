@@ -79,15 +79,18 @@ export default function App() {
     feedCharacter,
     buyFood,
     updateSettings,
+    doPrestige,
     applyDayReset,
   } = useGameState()
   useDayCycle(applyDayReset)
 
-  const [showSettings, setShowSettings] = useState(false)
-  const [showCalories, setShowCalories] = useState(false)
-  const [showActivity, setShowActivity] = useState(false)
-  const [showShop, setShowShop]         = useState(false)
-  const [activeFood, setActiveFood]     = useState<ActiveFood | null>(null)
+  const [showSettings, setShowSettings]     = useState(false)
+  const [showCalories, setShowCalories]     = useState(false)
+  const [showActivity, setShowActivity]     = useState(false)
+  const [showShop, setShowShop]             = useState(false)
+  const [activeFood, setActiveFood]         = useState<ActiveFood | null>(null)
+  const [prestigeEventSeq, setPrestigeEventSeq] = useState(0)
+  const [sceneFlash, setSceneFlash]         = useState(false)
 
   const sceneRef  = useRef<HTMLDivElement>(null)
   const ashtonRef = useRef<HTMLDivElement>(null)
@@ -95,6 +98,32 @@ export default function App() {
 
   const caloriesTotal = state.calorieLog.reduce((sum, e) => sum + e.amount, 0)
   const activityTotal = state.activityLog.reduce((sum, e) => sum + e.duration, 0)
+
+  // ── Prestige banner condition ─────────────────────────────────────────────
+  const a = state.characters.ashton
+  const s = state.characters.sharon
+  const bothAlive    = a.alive && s.alive
+  const bothDead     = !a.alive && !s.alive
+  const bothLevel25  = a.level >= 25 && s.level >= 25
+  const atLeastOneDead = !a.alive || !s.alive
+
+  let bannerMode: 'prestige' | 'reset' | 'gameover' | null = null
+  if (bothLevel25 && bothAlive)      bannerMode = 'prestige'
+  else if (bothLevel25 && atLeastOneDead) bannerMode = 'reset'
+  else if (bothDead && !bothLevel25) bannerMode = 'gameover'
+
+  // ── Prestige handler ──────────────────────────────────────────────────────
+  function handlePrestige(mode: 'prestige' | 'reset' | 'gameover') {
+    if (mode === 'gameover') {
+      clearState()
+      window.location.reload()
+      return
+    }
+    doPrestige(mode)
+    setPrestigeEventSeq(n => n + 1)
+    setSceneFlash(true)
+    setTimeout(() => setSceneFlash(false), 1000)
+  }
 
   // ── Shop buy handler ──────────────────────────────────────────────────────
   function handleBuyFood(item: FoodItem) {
@@ -135,7 +164,6 @@ export default function App() {
       feedCharacter('sharon', xpFromCost(activeFood.item.cost))
       setActiveFood(null)
     } else {
-      // Snap back to scene center
       setActiveFood(f =>
         f ? { ...f, phase: 'snapping', x: f.centerX, y: f.centerY } : null
       )
@@ -173,6 +201,9 @@ export default function App() {
                   Activity
                 </button>
               </div>
+              {state.prestigeLevel > 0 && (
+                <div className="prestige-indicator">★ Prestige {state.prestigeLevel}</div>
+              )}
               <div className="hearts-row">
                 <PixelHeart />
                 <span className="hearts-count">{state.hearts}</span>
@@ -196,8 +227,25 @@ export default function App() {
               />
             </div>
 
+            {/* Prestige banner — between progress and scene */}
+            {bannerMode && (
+              <div className={`prestige-banner prestige-banner-${bannerMode}`}>
+                <div className="prestige-banner-text">
+                  {bannerMode === 'prestige' && '★ PRESTIGE AVAILABLE!'}
+                  {bannerMode === 'reset'    && 'RESET AVAILABLE'}
+                  {bannerMode === 'gameover' && 'GAME OVER'}
+                </div>
+                <button
+                  className={`pixel-btn prestige-btn${bannerMode === 'prestige' ? ' btn-prestige' : ' btn-danger'}`}
+                  onClick={() => handlePrestige(bannerMode)}
+                >
+                  {bannerMode === 'prestige' ? 'Prestige!' : 'Reset'}
+                </button>
+              </div>
+            )}
+
             {/* Pixel scene with characters */}
-            <div className="scene" ref={sceneRef}>
+            <div className={`scene${sceneFlash ? ' scene-gold-flash' : ''}`} ref={sceneRef}>
               <div className="scene-sky">
                 <div className="cloud cloud-1" />
                 <div className="cloud cloud-2" />
@@ -205,10 +253,24 @@ export default function App() {
               <div className="characters-row">
                 {/* Wrapper divs give us getBoundingClientRect for hit detection */}
                 <div ref={ashtonRef}>
-                  <Character char={state.characters.ashton} onPet={petCharacter} />
+                  <Character
+                    char={state.characters.ashton}
+                    onPet={petCharacter}
+                    petXPAwarded={state.petXPAwardedToday.ashton}
+                    dayResetTs={state.lastDayReset}
+                    dayResetHearts={state.lastResetHearts}
+                    prestigeEvent={prestigeEventSeq}
+                  />
                 </div>
                 <div ref={sharonRef}>
-                  <Character char={state.characters.sharon} onPet={petCharacter} />
+                  <Character
+                    char={state.characters.sharon}
+                    onPet={petCharacter}
+                    petXPAwarded={state.petXPAwardedToday.sharon}
+                    dayResetTs={state.lastDayReset}
+                    dayResetHearts={state.lastResetHearts}
+                    prestigeEvent={prestigeEventSeq}
+                  />
                 </div>
               </div>
               <div className="scene-ground" />

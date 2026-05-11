@@ -32,6 +32,45 @@ export function getInitialState(): GameState {
     activityGoal: 60,
     purchasedClothing: [],
     lastDayReset: Date.now(),
+    calorieXPToday: 0,
+    activityXPToday: 0,
+    petXPAwardedToday: { ashton: false, sharon: false },
+    prestigeLevel: 0,
+    prestigeRewardMultiplier: 2,  // per-reward heart count; grows ×1.5 on each prestige
+    lastResetHearts: 0,
+  }
+}
+
+function migrateCharacter(
+  saved: Partial<CharacterState> | undefined,
+  id: 'ashton' | 'sharon'
+): CharacterState {
+  const initial = makeCharacter(id)
+  if (!saved) return initial
+  return {
+    ...initial,
+    ...saved,
+    equippedClothing: {
+      ...initial.equippedClothing,
+      ...(saved.equippedClothing ?? {}),
+    },
+  }
+}
+
+function migrateState(saved: Partial<GameState>): GameState {
+  const initial = getInitialState()
+  return {
+    ...initial,
+    ...saved,
+    characters: {
+      ashton: migrateCharacter(saved.characters?.ashton, 'ashton'),
+      sharon: migrateCharacter(saved.characters?.sharon, 'sharon'),
+    },
+    petXPAwardedToday: {
+      ashton: false,
+      sharon: false,
+      ...(saved.petXPAwardedToday ?? {}),
+    },
   }
 }
 
@@ -39,7 +78,7 @@ export function loadState(): GameState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw) as GameState
+    return migrateState(JSON.parse(raw) as Partial<GameState>)
   } catch {
     return null
   }

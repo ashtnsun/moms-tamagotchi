@@ -59,8 +59,6 @@ export function useGameState() {
     })
   }, [])
 
-  // Schedules a 'happy' → 'normal' revert after 5s for one character.
-  // Cancels any pending revert for that character first.
   function scheduleRevertFor(id: 'ashton' | 'sharon') {
     clearTimeout(moodTimers.current[id])
     moodTimers.current[id] = setTimeout(() => {
@@ -72,25 +70,43 @@ export function useGameState() {
     }, 5_000)
   }
 
+  // Calorie logging — max 3 XP per day from this source
   const logCalories = useCallback((amount: number, name?: string) => {
     setState(prev => {
+      const entry = { name, amount, timestamp: Date.now() }
+      if (prev.calorieXPToday >= 3) {
+        return { ...prev, calorieLog: [...prev.calorieLog, entry] }
+      }
       const aLevelBefore = prev.characters.ashton.level
       const sLevelBefore = prev.characters.sharon.level
       const next = awardXPBoth(prev, 1)
       if (next.characters.ashton.level > aLevelBefore) scheduleRevertFor('ashton')
       if (next.characters.sharon.level > sLevelBefore) scheduleRevertFor('sharon')
-      return { ...next, calorieLog: [...next.calorieLog, { name, amount, timestamp: Date.now() }] }
+      return {
+        ...next,
+        calorieXPToday: prev.calorieXPToday + 1,
+        calorieLog: [...next.calorieLog, entry],
+      }
     })
   }, [setState])
 
+  // Activity logging — max 3 XP per day from this source
   const logActivity = useCallback((activity: string, duration: number) => {
     setState(prev => {
+      const entry = { activity, duration, timestamp: Date.now() }
+      if (prev.activityXPToday >= 3) {
+        return { ...prev, activityLog: [...prev.activityLog, entry] }
+      }
       const aLevelBefore = prev.characters.ashton.level
       const sLevelBefore = prev.characters.sharon.level
       const next = awardXPBoth(prev, 1)
       if (next.characters.ashton.level > aLevelBefore) scheduleRevertFor('ashton')
       if (next.characters.sharon.level > sLevelBefore) scheduleRevertFor('sharon')
-      return { ...next, activityLog: [...next.activityLog, { activity, duration, timestamp: Date.now() }] }
+      return {
+        ...next,
+        activityXPToday: prev.activityXPToday + 1,
+        activityLog: [...next.activityLog, entry],
+      }
     })
   }, [setState])
 
@@ -115,20 +131,29 @@ export function useGameState() {
     })
   }, [setState])
 
+  // Petting — triggers happy mood + bounce every time, awards XP only once per day
   const petCharacter = useCallback((id: 'ashton' | 'sharon') => {
     setState(prev => {
       const char = prev.characters[id]
       if (!char.alive) return prev
-      const now = Date.now()
-      if (now - char.lastPetTimestamp < 3_600_000) return prev
       scheduleRevertFor(id)
+
+      if (!prev.petXPAwardedToday[id]) {
+        const levelBefore = char.level
+        const { char: updated, heartsGained } = applyXP(char, 1)
+        if (updated.level > levelBefore) scheduleRevertFor(id)
+        return {
+          ...prev,
+          hearts: prev.hearts + heartsGained,
+          petXPAwardedToday: { ...prev.petXPAwardedToday, [id]: true },
+          characters: { ...prev.characters, [id]: { ...updated, mood: 'happy' } },
+        }
+      }
+
+      // Already petted today — still go happy, no XP
       return {
         ...prev,
-        hearts: prev.hearts + 1,
-        characters: {
-          ...prev.characters,
-          [id]: { ...char, mood: 'happy', lastPetTimestamp: now },
-        },
+        characters: { ...prev.characters, [id]: { ...char, mood: 'happy' } },
       }
     })
   }, [setState])
@@ -166,6 +191,35 @@ export function useGameState() {
     setState(prev => ({ ...prev, calorieGoal, activityGoal }))
   }, [setState])
 
+  // Prestige: 'prestige' increments level + multiplier; 'reset' keeps them unchanged.
+  // 'gameover' is handled in App.tsx via clearState + reload.
+  const doPrestige = useCallback((mode: 'prestige' | 'reset') => {
+    setState(prev => {
+      const initial = getInitialState()
+      const newPrestigeLevel = mode === 'prestige' ? prev.prestigeLevel + 1 : prev.prestigeLevel
+      const newMultiplier = mode === 'prestige'
+        ? Math.ceil(prev.prestigeRewardMultiplier * 1.5)
+        : prev.prestigeRewardMultiplier
+
+      return {
+        ...prev,
+        prestigeLevel: newPrestigeLevel,
+        prestigeRewardMultiplier: newMultiplier,
+        characters: {
+          ashton: { ...initial.characters.ashton },
+          sharon: { ...initial.characters.sharon },
+        },
+        calorieLog: [],
+        activityLog: [],
+        calorieXPToday: 0,
+        activityXPToday: 0,
+        petXPAwardedToday: { ashton: false, sharon: false },
+        lastResetHearts: 0,
+        lastDayReset: Date.now(),
+      }
+    })
+  }, [setState])
+
   const applyDayReset = useCallback((updater: (prev: GameState) => GameState) => {
     setState(updater)
   }, [setState])
@@ -179,6 +233,7 @@ export function useGameState() {
     buyFood,
     buyClothing,
     updateSettings,
+    doPrestige,
     applyDayReset,
   }
 }

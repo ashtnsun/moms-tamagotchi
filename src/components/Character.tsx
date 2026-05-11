@@ -33,21 +33,44 @@ const HEART_NOTIF: ReactNode = (
   </span>
 )
 
+// 8 directions for level-up burst
+const DIRS_8: [number, number][] = [
+  [0, -1], [0.707, -0.707], [1, 0], [0.707, 0.707],
+  [0, 1], [-0.707, 0.707], [-1, 0], [-0.707, -0.707],
+]
+// 12 directions for age-transition / prestige burst
+const DIRS_12: [number, number][] = [
+  [0, -1], [0.5, -0.866], [0.866, -0.5], [1, 0],
+  [0.866, 0.5], [0.5, 0.866], [0, 1], [-0.5, 0.866],
+  [-0.866, 0.5], [-1, 0], [-0.866, -0.5], [-0.5, -0.866],
+]
+
 type NotifType = 'xp' | 'heart' | 'levelup' | 'cooldown'
 interface Notif { id: number; content: ReactNode; type: NotifType }
+
+type CelebMode = 'levelup' | 'age' | null
 
 interface Props {
   char: CharacterState
   onPet: (id: 'ashton' | 'sharon') => void
+  petXPAwarded: boolean      // true if XP already given today
+  dayResetTs: number         // state.lastDayReset — fires the day-reset notification
+  dayResetHearts: number     // hearts awarded at that reset
+  prestigeEvent: number      // increments on prestige → triggers celebration
 }
 
-export function Character({ char, onPet }: Props) {
-  const [imgError, setImgError]   = useState(false)
-  const [notifs, setNotifs]       = useState<Notif[]>([])
-  const [isBouncing, setIsBouncing] = useState(false)
+export function Character({ char, onPet, petXPAwarded, dayResetTs, dayResetHearts, prestigeEvent }: Props) {
+  const [imgError, setImgError]           = useState(false)
+  const [notifs, setNotifs]               = useState<Notif[]>([])
+  const [isBouncing, setIsBouncing]       = useState(false)
+  const [isCelebBounce, setIsCelebBounce] = useState(false)
+  const [celebMode, setCelebMode]         = useState<CelebMode>(null)
+  const [nameFlash, setNameFlash]         = useState(false)
 
-  const notifCounter = useRef(0)
-  const prevRef      = useRef({ xp: char.xp, level: char.level, age: char.age as string })
+  const notifCounter     = useRef(0)
+  const prevRef          = useRef({ xp: char.xp, level: char.level, age: char.age as string })
+  const prevDayResetRef  = useRef(dayResetTs)
+  const prevPrestigeRef  = useRef(prestigeEvent)
 
   const imgPath = char.alive
     ? `/src/assets/sprites/${char.id}/${char.age}_${char.mood}.png`
@@ -62,6 +85,7 @@ export function Character({ char, onPet }: Props) {
     setTimeout(() => setNotifs(prev => prev.filter(n => n.id !== id)), 6000)
   }, [])
 
+  // Level-up / age-transition celebration
   useEffect(() => {
     const prev = prevRef.current
     const levelGained = char.level > prev.level
@@ -69,9 +93,19 @@ export function Character({ char, onPet }: Props) {
     const xpChanged   = char.xp !== prev.xp || levelGained
 
     if (levelGained) {
-      if (ageChanged) addNotif('grew up!', 'levelup')
+      if (ageChanged) {
+        addNotif('grew up!', 'levelup')
+        setCelebMode('age')
+        setNameFlash(true)
+        setTimeout(() => setNameFlash(false), 2000)
+      } else {
+        setCelebMode('levelup')
+      }
       addNotif('Level up!', 'levelup')
       addNotif(HEART_NOTIF, 'heart')
+      setIsCelebBounce(true)
+      setTimeout(() => setIsCelebBounce(false), 500)
+      setTimeout(() => setCelebMode(null), 2000)
     } else if (xpChanged) {
       addNotif('+1 XP!', 'xp')
     }
@@ -79,24 +113,65 @@ export function Character({ char, onPet }: Props) {
     prevRef.current = { xp: char.xp, level: char.level, age: char.age }
   }, [char.xp, char.level, char.age, addNotif])
 
+  // Day-reset heart notification
+  useEffect(() => {
+    if (dayResetTs !== prevDayResetRef.current && dayResetHearts > 0) {
+      const content = (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+          +{dayResetHearts} <PixelHeart size={3} color="#E8607A" />
+        </span>
+      )
+      addNotif(content, 'heart')
+    }
+    prevDayResetRef.current = dayResetTs
+  }, [dayResetTs, dayResetHearts, addNotif])
+
+  // Prestige celebration — 12-star burst + name flash
+  useEffect(() => {
+    if (prestigeEvent !== prevPrestigeRef.current) {
+      setCelebMode('age')
+      setNameFlash(true)
+      setIsCelebBounce(true)
+      setTimeout(() => setNameFlash(false), 2000)
+      setTimeout(() => setIsCelebBounce(false), 500)
+      setTimeout(() => setCelebMode(null), 2000)
+    }
+    prevPrestigeRef.current = prestigeEvent
+  }, [prestigeEvent])
+
   function handlePet() {
     if (!char.alive) return
-    if (Date.now() - char.lastPetTimestamp < 3_600_000) {
-      addNotif('come back later!', 'cooldown')
-    } else {
-      onPet(char.id)
-      setIsBouncing(true)
-      setTimeout(() => setIsBouncing(false), 420)
-      addNotif(HEART_NOTIF, 'heart')
+    onPet(char.id)
+    setIsBouncing(true)
+    setTimeout(() => setIsBouncing(false), 420)
+    if (petXPAwarded) {
+      addNotif('already petted today!', 'cooldown')
     }
+    // When !petXPAwarded, the XP notification fires from the char.xp useEffect
   }
 
   const name   = char.id === 'ashton' ? 'Ashton' : 'Sharon'
   const wScale = WEIGHT_SCALE[char.weight] ?? 1
+  const dirs   = celebMode === 'age' ? DIRS_12 : DIRS_8
 
   return (
     <div className="character-slot">
-      {/* Fixed-size notification zone — position:relative so notifs are absolute inside */}
+      {/* Star burst — absolutely positioned at sprite center */}
+      {celebMode && (
+        <div className="star-burst" aria-hidden="true">
+          {dirs.map(([dx, dy], i) => (
+            <div
+              key={i}
+              className="star-particle"
+              style={{ '--dx': `${dx}`, '--dy': `${dy}` } as React.CSSProperties}
+            >
+              ★
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Fixed-size notification zone */}
       <div className="char-notif-area">
         {notifs.map((n, i) => (
           <div
@@ -110,11 +185,14 @@ export function Character({ char, onPet }: Props) {
       </div>
 
       {/*
-        Transparent sprite container — no border, no background, no shadow.
-        Three layers: pointer target → weight scaleX → bounce scaleY
+        Three-layer sprite container.
+        Outermost: celebration scale bounce + pointer capture
+        Middle: weight scaleX
+        Innermost: pet bounce scaleY
       */}
       <div
-        className="char-sprite-outer"
+        className={`char-sprite-outer${isCelebBounce ? ' char-celebrate-bounce' : ''}`}
+        style={{ pointerEvents: char.alive ? undefined : 'none' }}
         onPointerDown={e => e.currentTarget.setPointerCapture(e.pointerId)}
         onPointerUp={handlePet}
       >
@@ -146,11 +224,15 @@ export function Character({ char, onPet }: Props) {
                   })}
               </>
             ) : (
-              imgSrc ? (
-                <img src={imgSrc} alt="gravestone" className="char-sprite-img"
-                  onError={ev => { (ev.target as HTMLImageElement).style.display = 'none' }} />
+              imgSrc && !imgError ? (
+                <img
+                  src={imgSrc}
+                  alt="gravestone"
+                  className="char-sprite-img"
+                  onError={() => setImgError(true)}
+                />
               ) : (
-                <div className="char-placeholder" style={{ background: '#D4CFC7' }} />
+                <div className="char-gravestone-fallback">🪦</div>
               )
             )}
           </div>
@@ -158,7 +240,7 @@ export function Character({ char, onPet }: Props) {
       </div>
 
       <div className="char-label-group">
-        <div className="char-name">{name}</div>
+        <div className={`char-name${nameFlash ? ' char-name-flash' : ''}`}>{name}</div>
         {!char.alive ? (
           <div className="char-dead-label">RIP {name}</div>
         ) : (

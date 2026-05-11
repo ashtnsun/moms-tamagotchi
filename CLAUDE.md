@@ -125,7 +125,7 @@ A "day" resets at 4:00 AM local time.
 - Reset `calorieLog`, `activityLog`, `foodCountToday` for both characters
 - Check food rules per character:
   - If `foodCountToday === 0`: increment `daysWithoutFood`, set mood to sad
-  - If `daysWithoutFood >= 5`: set `alive = false`
+  - If `daysWithoutFood >= 3`: set `alive = false`
   - If `foodCountToday > 3`: increment weight stage by one (max: obese)
   - If `foodCountToday === 0` for the day: decrement weight stage by one (min: skinny)
 - Check activity goal: if filled, award +1 heart
@@ -203,8 +203,7 @@ If `alive === false`, render `gravestone.png` instead of the character sprite. N
 Gains:
 - +1 per character level up
 - +5 per age stage transition (per character)
-- +1 if activity goal met for the day (on day reset)
-- +1 when a character is petted (1-hour cooldown per character)
+- Day reset rewards (at 4am): calories logged in [1000, calorieGoal] → +prestigeRewardMultiplier hearts; activity ≥ activityGoal → +prestigeRewardMultiplier hearts (both earnable same day)
 
 Spending: clothing items and food cost 1–3 hearts. Deduct on purchase. If hearts < cost, block purchase and show "not enough hearts."
 
@@ -212,12 +211,12 @@ Spending: clothing items and food cost 1–3 hearts. Deduct on purchase. If hear
 
 ## Petting mechanic
 
-`src/hooks/usePetCooldown.ts`
-
-When user clicks and drags/swipes on a character:
-- Check `lastPetTimestamp` — if less than 1 hour ago, do nothing (show "already petted recently")
-- If cooldown passed: set mood to happy, +1 heart, update `lastPetTimestamp`
-- Trigger a short visual animation (bounce or sparkle CSS animation)
+When user taps/clicks a character:
+- Triggers happy mood + bounce animation every time
+- Awards 1 XP once per day per character (tracked via `petXPAwardedToday: {ashton: boolean, sharon: boolean}`, reset at 4am)
+- If already petted today: shows "already petted today!" notification, still triggers bounce
+- No hearts awarded from petting
+- No 1-hour cooldown
 
 ---
 
@@ -427,6 +426,36 @@ Build in this order. Complete each phase fully before moving on.
 - Death state
 - Test all localStorage persistence
 - Test day reset at 4am
+
+---
+
+## Prestige system
+
+**GameState fields:**
+- `prestigeLevel: number` — starts 0; increments on each prestige
+- `prestigeRewardMultiplier: number` — starts 2 (actual per-reward heart count); grows `Math.ceil(n × 1.5)` on each prestige (sequence: 2 → 3 → 5 → 8…)
+- `lastResetHearts: number` — hearts awarded at the most recent 4am reset (for character notification)
+
+**Banner conditions (shown between progress bars and scene):**
+- A: both chars level ≥ 25 AND both alive → gold pulsing banner "★ PRESTIGE AVAILABLE!", [Prestige!] button
+- B: both chars level ≥ 25, at least one dead → muted banner "RESET AVAILABLE", [Reset] button
+- C: both chars dead, neither at level ≥ 25 → red banner "GAME OVER", [Reset] → clearState() + reload
+
+**Prestige action (mode = 'prestige' | 'reset'):**
+- `prestigeLevel++` (prestige only)
+- `prestigeRewardMultiplier = Math.ceil(current × 1.5)` (prestige only)
+- Both chars reset to level 1, baby, alive
+- `calorieLog`, `activityLog`, XP counters, petXPAwardedToday reset
+- Hearts and `purchasedClothing` are kept
+
+**Top bar:** show `★ Prestige {n}` in gold (8px) if `prestigeLevel > 0`
+
+**Celebration:** prestige fires 12-star burst + name flash on both characters + scene gold flash overlay (1s)
+
+**XP daily caps:**
+- `calorieXPToday: number` — max 3 XP/day from calorie logging; still appends the log entry when capped
+- `activityXPToday: number` — max 3 XP/day from activity logging; same behavior
+- Both reset at 4am
 
 ---
 

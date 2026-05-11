@@ -19,7 +19,7 @@ export interface CharacterState {
     shoes: string | null
     hat: string | null
   }
-  lastPetTimestamp: number
+  lastPetTimestamp: number  // kept for migration compat; no longer used for cooldown
 }
 
 export interface GameState {
@@ -34,4 +34,15 @@ export interface GameState {
   activityGoal: number
   purchasedClothing: string[]
   lastDayReset: number
+  // XP daily caps (reset at 4am)
+  calorieXPToday: number
+  activityXPToday: number
+  // Petting XP — awarded once per day per character
+  petXPAwardedToday: { ashton: boolean; sharon: boolean }
+  // Prestige
+  prestigeLevel: number
+  // Stores the actual per-reward heart amount; starts at 2, grows by ×1.5 (rounded up) on each prestige
+  prestigeRewardMultiplier: number
+  // Hearts awarded at the most recent 4am reset (for character notification)
+  lastResetHearts: number
 }

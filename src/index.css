@@ -300,7 +300,7 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
-  padding: 12px 24px 64px;
+  padding: 12px 24px 24px;
   background: linear-gradient(to bottom, #C8EDD6 0%, #d4edc0 100%);
   flex: 1;
   /* No overflow:hidden — larger sprites overflow upward into the sky area,
@@ -312,6 +312,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  position: relative;
+  bottom: 60px;
 }
 
 .sprite-box {
@@ -397,27 +399,41 @@ body {
 .popup-outer {
   position: absolute;
   top: 0;
-  width: 260px;
-  max-height: 90vh;
+  width: 320px;
+  max-height: 80vh;
   overflow: hidden;
   background: #3D2B1F;
   border-radius: 12px;
   padding: 6px;
   box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.28);
   z-index: 100;
+  display: flex;
+  flex-direction: column;
 }
 
 .popup-mid {
   background: #C4A882;
   border-radius: 8px;
   padding: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .popup-inner {
   background: #FFF8E7;
   border-radius: 6px;
   padding: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
+
+.popup-inner::-webkit-scrollbar        { width: 6px; }
+.popup-inner::-webkit-scrollbar-track  { background: #D4CFC7; border-radius: 3px; }
+.popup-inner::-webkit-scrollbar-thumb  { background: #9B8E82; border-radius: 3px; border: 1px solid #3D2B1F; }
+.popup-inner::-webkit-scrollbar-thumb:hover { background: #7A6E65; }
 
 .settings-popup {
   left: calc(100% + 24px);
@@ -473,7 +489,7 @@ body {
 }
 
 .popup-title {
-  font-size: 13px;
+  font-size: 15px;
   color: #3D2B1F;
   margin: 0 0 16px;
   line-height: 1.4;
@@ -488,15 +504,11 @@ body {
 
 /* ===================== PHASE 3 — TRACKER POPUPS ===================== */
 
-/* Calorie popup width — position is handled by .popup-col-left */
-.popup-calories {
-  width: 280px;
-}
+/* Calorie popup width — inherits 320px from .popup-outer */
+.popup-calories {}
 
-/* Activity popup width — position is handled by .popup-col-right */
-.popup-activity {
-  width: 280px;
-}
+/* Activity popup width — inherits 320px from .popup-outer */
+.popup-activity {}
 
 /* Left-side column: Calories on top, Shop below, 12px gap */
 .popup-col-left {
@@ -574,19 +586,19 @@ body {
 }
 
 .popup-log-name {
-  font-size: 9px;
+  font-size: 10px;
   color: #3D2B1F;
   line-height: 1.4;
 }
 
 .popup-log-meta {
-  font-size: 9px;
+  font-size: 10px;
   color: #9B8E82;
   line-height: 1.4;
 }
 
 .popup-log-empty {
-  font-size: 9px;
+  font-size: 10px;
   color: #9B8E82;
   text-align: center;
   padding: 12px 0;
@@ -600,7 +612,7 @@ body {
 
 .popup-input {
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 11px;
   padding: 8px 10px;
   border: 2px solid #3D2B1F;
   border-radius: 2px;
@@ -624,7 +636,7 @@ body {
   top: 50%;
   transform: translateY(-50%);
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
+  font-size: 10px;
   color: #9B8E82;
   pointer-events: none;
   white-space: nowrap;
@@ -635,7 +647,7 @@ body {
 }
 
 .popup-error {
-  font-size: 7px;
+  font-size: 8px;
   color: #E8394A;
   line-height: 1.4;
 }
@@ -648,7 +660,7 @@ body {
 
 .popup-form-actions .pixel-btn {
   flex: 1;
-  font-size: 11px;
+  font-size: 12px;
   padding: 8px 6px;
 }
 
@@ -665,10 +677,7 @@ body {
   box-shadow: none;
 }
 
-/* character-slot keeps position:relative for any future absolutely-positioned children */
-.character-slot {
-  position: relative;
-}
+/* position:relative is set on .character-slot in the main rule above */
 
 /* ===================== PHASE 4 — CHARACTER COMPONENT ===================== */
 
@@ -919,9 +928,8 @@ body {
 
 /* ===================== PHASE 6 — SETTINGS ===================== */
 
-.popup-settings {
-  width: 280px;
-}
+/* Settings popup width — inherits 320px from .popup-outer */
+.popup-settings {}
 
 .settings-form {
   display: flex;
@@ -938,7 +946,7 @@ body {
 
 .settings-label {
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
+  font-size: 11px;
   color: #3D2B1F;
   line-height: 1.5;
 }
@@ -987,4 +995,176 @@ body {
   font-size: 8px;
   color: #E8607A;
   line-height: 1.6;
+}
+
+/* ===================== PHASE 7 — CELEBRATIONS & DEATH ===================== */
+
+/*
+  Star burst container sits at the visual center of char-sprite-outer.
+  character-slot is position:relative; these stars are absolute inside it.
+  top = notif-area(80px) + gap(12px) + sprite-height/2(150.5px) ≈ 243px
+*/
+.star-burst {
+  position: absolute;
+  top: 243px;
+  left: 50%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.star-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: #F5C842;
+  pointer-events: none;
+  animation: starBurst 1.5s ease-out forwards;
+}
+
+@keyframes starBurst {
+  0%   {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+      calc(-50% + calc(var(--dx) * 60px)),
+      calc(-50% + calc(var(--dy) * 60px))
+    );
+  }
+}
+
+/* Celebration scale bounce applied to char-sprite-outer */
+.char-celebrate-bounce {
+  animation: charCelebrateBounce 400ms ease-out;
+}
+
+@keyframes charCelebrateBounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Age transition: character name flashes gold for 2s */
+.char-name-flash {
+  animation: nameGoldFlash 2s ease-in-out forwards;
+}
+
+@keyframes nameGoldFlash {
+  0%,  70% { color: #F5C842; }
+  100%      { color: #3D2B1F; }
+}
+
+/* Gravestone emoji fallback when gravestone.png is missing */
+.char-gravestone-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 80px;
+  line-height: 1;
+}
+
+/* ===================== PRESTIGE SYSTEM ===================== */
+
+.prestige-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 3px solid #3D2B1F;
+  flex-shrink: 0;
+}
+
+.prestige-banner-prestige {
+  background: linear-gradient(to bottom, #FFF3C4, #FFE580);
+  animation: prestigePulse 1.5s ease-in-out infinite;
+}
+
+.prestige-banner-reset {
+  background: #EEE8DF;
+}
+
+.prestige-banner-gameover {
+  background: #FFD6D6;
+}
+
+.prestige-banner-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.prestige-banner-prestige .prestige-banner-text { color: #A0760A; }
+.prestige-banner-reset    .prestige-banner-text { color: #7A6E65; }
+.prestige-banner-gameover .prestige-banner-text { color: #B52030; }
+
+.prestige-btn {
+  font-size: 9px;
+  padding: 6px 12px;
+}
+
+.btn-prestige {
+  background: #F5C842;
+  box-shadow: 3px 3px 0 #A0760A;
+  color: #3D2B1F;
+}
+
+.btn-prestige:active {
+  background: #D4A91E;
+}
+
+@keyframes prestigePulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.78; }
+}
+
+/* Prestige level indicator in top bar */
+.prestige-indicator {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #F5C842;
+  text-shadow: 1px 1px 0 rgba(61, 43, 31, 0.5);
+}
+
+/* Scene gold flash overlay on prestige */
+.scene-gold-flash {
+  position: relative;
+}
+
+.scene-gold-flash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(245, 200, 66, 0.45);
+  pointer-events: none;
+  z-index: 10;
+  animation: goldFlash 1s ease-out forwards;
+}
+
+@keyframes goldFlash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ===================== MOBILE BREAKPOINT =====================
+   When the viewport is too narrow to show side popups, stack
+   them centered above the game frame instead.
+   =========================================================== */
+@media (max-width: 1080px) {
+  .popup-col-left,
+  .popup-col-right {
+    position: fixed;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    z-index: 150;
+  }
 }

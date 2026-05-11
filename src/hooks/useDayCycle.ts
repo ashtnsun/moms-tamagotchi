@@ -15,16 +15,17 @@ function last4amBefore(now: number): number {
   return d.getTime()
 }
 
-function processCharacter(char: CharacterState): { char: CharacterState; heartsGained: number } {
-  if (!char.alive) return { char, heartsGained: 0 }
+function processCharacter(char: CharacterState): CharacterState {
+  if (!char.alive) return char
 
   let updated = { ...char, foodCountToday: 0 }
 
   if (char.foodCountToday === 0) {
     updated.daysWithoutFood = char.daysWithoutFood + 1
-    if (updated.daysWithoutFood >= 5) {
+    // Death threshold: 3 days without food
+    if (updated.daysWithoutFood >= 3) {
       updated.alive = false
-      return { char: updated, heartsGained: 0 }
+      return updated
     }
     updated.weight = nextWeight(char.weight, -1)
   } else if (char.foodCountToday > 3) {
@@ -33,7 +34,7 @@ function processCharacter(char: CharacterState): { char: CharacterState; heartsG
     updated.daysWithoutFood = 0
   }
 
-  return { char: updated, heartsGained: 0 }
+  return updated
 }
 
 export function useDayCycle(applyDayReset: (updater: (prev: GameState) => GameState) => void) {
@@ -44,22 +45,34 @@ export function useDayCycle(applyDayReset: (updater: (prev: GameState) => GameSt
         const boundary = last4amBefore(now)
         if (prev.lastDayReset >= boundary) return prev
 
-        const aRes = processCharacter(prev.characters.ashton)
-        const sRes = processCharacter(prev.characters.sharon)
+        const ashton = processCharacter(prev.characters.ashton)
+        const sharon = processCharacter(prev.characters.sharon)
 
+        // Calorie reward: logged between 1000 kcal and the goal (inclusive)
+        const caloriesTotal = prev.calorieLog.reduce((sum, e) => sum + e.amount, 0)
+        const calorieBonus = (caloriesTotal >= 1000 && caloriesTotal <= prev.calorieGoal)
+          ? prev.prestigeRewardMultiplier
+          : 0
+
+        // Activity reward: met or exceeded the goal
         const activityTotal = prev.activityLog.reduce((sum, e) => sum + e.duration, 0)
-        const activityBonus = activityTotal >= prev.activityGoal ? 1 : 0
+        const activityBonus = activityTotal >= prev.activityGoal
+          ? prev.prestigeRewardMultiplier
+          : 0
+
+        const totalHeartsGained = calorieBonus + activityBonus
 
         return {
           ...prev,
           calorieLog: [],
           activityLog: [],
-          hearts: prev.hearts + activityBonus,
+          hearts: prev.hearts + totalHeartsGained,
           lastDayReset: now,
-          characters: {
-            ashton: aRes.char,
-            sharon: sRes.char,
-          },
+          lastResetHearts: totalHeartsGained,
+          calorieXPToday: 0,
+          activityXPToday: 0,
+          petXPAwardedToday: { ashton: false, sharon: false },
+          characters: { ashton, sharon },
         }
       })
     }
