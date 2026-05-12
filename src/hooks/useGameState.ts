@@ -2,18 +2,18 @@ import { useState, useCallback, useRef } from 'react'
 import type { GameState, CharacterState, AgeStage } from '../types'
 import { loadState, saveState, getInitialState } from '../utils/localStorage'
 
+function getCorrectAge(level: number): AgeStage {
+  if (level >= 20) return 'adult'
+  if (level >= 15) return 'teen'
+  if (level >= 10) return 'adolescent'
+  return 'baby'
+}
+
 function xpPerLevel(level: number): number {
   if (level <= 9)  return 5
   if (level <= 14) return 6
   if (level <= 19) return 7
   return 8  // levels 20–24
-}
-
-function ageForLevel(level: number): AgeStage {
-  if (level < 10) return 'baby'
-  if (level < 15) return 'adolescent'
-  if (level < 20) return 'teen'
-  return 'adult'
 }
 
 function applyXP(
@@ -28,7 +28,7 @@ function applyXP(
   while (level < 25 && xp >= xpPerLevel(level)) {
     xp -= xpPerLevel(level)
     level += 1
-    const newAge = ageForLevel(level)
+    const newAge = getCorrectAge(level)
     if (newAge !== age) age = newAge
     mood = 'happy'
   }
@@ -47,8 +47,31 @@ function awardXPBoth(state: GameState, amount: number): GameState {
   }
 }
 
+// Run once at startup: if saved age doesn't match the level threshold,
+// correct it in-memory AND write the fix to localStorage immediately.
+function loadAndCorrect(): GameState {
+  const loaded = loadState() ?? getInitialState()
+  let needsSave = false
+  const characters = { ...loaded.characters }
+
+  for (const id of ['ashton', 'sharon'] as const) {
+    const char = characters[id]
+    const correctAge = getCorrectAge(char.level)
+    if (char.age !== correctAge) {
+      console.log(`[age-fix] ${id}: age '${char.age}' → '${correctAge}' at level ${char.level}`)
+      characters[id] = { ...char, age: correctAge }
+      needsSave = true
+    }
+  }
+
+  if (!needsSave) return loaded
+  const corrected = { ...loaded, characters }
+  saveState(corrected)
+  return corrected
+}
+
 export function useGameState() {
-  const [state, setStateRaw] = useState<GameState>(() => loadState() ?? getInitialState())
+  const [state, setStateRaw] = useState<GameState>(loadAndCorrect)
   const moodTimers = useRef<Partial<Record<'ashton' | 'sharon', ReturnType<typeof setTimeout>>>>({})
 
   const setState = useCallback((updater: (prev: GameState) => GameState) => {

@@ -78,6 +78,7 @@ function migrateCharacter(
     ? 0
     : Math.max(0, Math.min(merged.xp, xpCapForLevel(merged.level) - 1))
 
+  console.log(`[migration] ${id}: level=${merged.level} age ${merged.age} → ${correctedAge} xp=${correctedXp}`)
   return { ...merged, age: correctedAge, xp: correctedXp }
 }
 
